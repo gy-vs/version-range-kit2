@@ -63,3 +63,43 @@ test('= is ignored', t => {
   t.match(new Comparator('=1.2.3'), new Comparator('1.2.3'))
   t.end()
 })
+
+test('exclusion comparators', t => {
+  const c = new Comparator('!=1.2.3')
+  t.equal(c.operator, '!=')
+  t.equal(c.value, '!=1.2.3')
+  t.equal(c.toString(), '!=1.2.3')
+  t.equal(c.semver.version, '1.2.3')
+  t.notOk(c.test('1.2.3'), 'excluded version does not match')
+  t.ok(c.test('1.2.4'), 'any other version matches')
+  t.ok(c.test('0.0.1'), 'any other version matches')
+
+  t.equal(new Comparator('!= 1.2.3').value, '!=1.2.3', 'space is trimmed')
+  t.equal(new Comparator('!=v1.2.3').value, '!=1.2.3', 'v is stripped')
+  t.equal(new Comparator('!=1.2.3+build').value, '!=1.2.3', 'build is stripped')
+  t.equal(new Comparator('!=1.2.3-alpha.1').value, '!=1.2.3-alpha.1',
+    'prereleases can be excluded')
+  t.equal(new Comparator('!=1.2.3', { loose: true }).value, '!=1.2.3',
+    'loose mode parses exclusions')
+
+  const c2 = new Comparator(c)
+  t.equal(c2, c, 'comparator of comparator returns same object')
+  t.notOk(c2.test('1.2.3'))
+  t.end()
+})
+
+test('invalid exclusion comparators throw', t => {
+  t.throws(() => new Comparator('!=1.2'),
+    new TypeError('Invalid comparator: !=1.2'), 'partial version')
+  t.throws(() => new Comparator('!=1.x'),
+    new TypeError('Invalid comparator: !=1.x'), 'x-range')
+  t.throws(() => new Comparator('!=*'),
+    new TypeError('Invalid comparator: !=*'), 'star')
+  t.throws(() => new Comparator('!='),
+    new TypeError('Invalid comparator: !='), 'no version at all')
+  t.throws(() => new Comparator('!=1.2', { loose: true }),
+    new TypeError('Invalid comparator: !=1.2'), 'partial version, loose')
+  t.throws(() => new Comparator('!=1.2.3.4', { loose: true }),
+    new TypeError('Invalid comparator: !=1.2.3.4'), 'extra version parts, loose')
+  t.end()
+})

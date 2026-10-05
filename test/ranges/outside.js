@@ -53,3 +53,16 @@ test('outside with bad hilo throws', (t) => {
   }, new TypeError('Must provide a hilo val of "<" or ">"'))
   t.end()
 })
+
+test('outside with exclusion comparators', (t) => {
+  // a version in the range is not outside of it
+  t.notOk(outside('1.4.4', '!=1.4.3', '>'), '1.4.4 is in !=1.4.3')
+  t.notOk(outside('1.4.2', '!=1.4.3', '<'), '1.4.2 is in !=1.4.3')
+  // anything else throws rather than answering incorrectly
+  t.throws(() => outside('1.4.3', '!=1.4.3', '>'),
+    new TypeError('gtr/ltr are not supported for ranges with != comparators: !=1.4.3'))
+  t.throws(() => outside('1.4.3', '!=1.4.3', '<'),
+    new TypeError('gtr/ltr are not supported for ranges with != comparators: !=1.4.3'))
+  t.throws(() => outside('2.0.0', '>=1.2.0 <2.0.0 !=1.4.3', '>'), TypeError)
+  t.end()
+})

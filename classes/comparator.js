@@ -34,7 +34,11 @@ class Comparator {
   }
 
   parse (comp) {
-    const r = this.options.loose ? re[t.COMPARATORLOOSE] : re[t.COMPARATOR]
+    // `!=1.2.3` excludes exactly that version from the set.  Exclusions
+    // require a full version, partial versions like `!=1.2` are invalid.
+    const r = comp.startsWith('!=')
+      ? (this.options.loose ? re[t.EXCLUDELOOSE] : re[t.EXCLUDE])
+      : (this.options.loose ? re[t.COMPARATORLOOSE] : re[t.COMPARATOR])
     const m = comp.match(r)
 
     if (!m) {
@@ -111,6 +115,12 @@ class Comparator {
     }
     // Same direction decreasing (< or <=)
     if (this.operator.startsWith('<') && comp.operator.startsWith('<')) {
+      return true
+    }
+    // an exclusion only removes a single version, so it intersects any
+    // other comparator that is not the null set or that exact version,
+    // both of which are handled above
+    if (this.operator === '!=' || comp.operator === '!=') {
       return true
     }
     // same SemVer and both sides are inclusive (<= or >=)

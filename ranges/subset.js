@@ -49,6 +49,8 @@ const subset = (sub, dom, options = {}) => {
 
   sub = new Range(sub, options)
   dom = new Range(dom, options)
+  rejectExclusions(sub)
+  rejectExclusions(dom)
   let sawNonNull = false
 
   OUTER: for (const simpleSub of sub.set) {
@@ -72,6 +74,18 @@ const subset = (sub, dom, options = {}) => {
 
 const minimumVersionWithPreRelease = [new Comparator('>=0.0.0-0')]
 const minimumVersion = [new Comparator('>=0.0.0')]
+
+// the interval logic below does not account for exclusion comparators,
+// so refuse to answer rather than risk returning a wrong result
+const rejectExclusions = (range) => {
+  for (const comparators of range.set) {
+    for (const c of comparators) {
+      if (c.operator === '!=') {
+        throw new TypeError(`subset is not supported for ranges with != comparators: ${range.raw}`)
+      }
+    }
+  }
+}
 
 const simpleSubset = (sub, dom, options) => {
   if (sub === dom) {

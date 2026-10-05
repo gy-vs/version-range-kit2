@@ -24,3 +24,13 @@ test('negative ltr tests', (t) => {
   })
   t.end()
 })
+
+test('ltr with exclusion comparators', (t) => {
+  // a version in the range is not outside of it
+  t.notOk(ltr('1.4.2', '!=1.4.3'), '1.4.2 is in !=1.4.3, not less than it')
+  // anything else throws rather than answering incorrectly
+  t.throws(() => ltr('1.4.3', '!=1.4.3'),
+    new TypeError('gtr/ltr are not supported for ranges with != comparators: !=1.4.3'))
+  t.throws(() => ltr('2.0.0', '>=1.2.0 <2.0.0 !=1.4.3'), TypeError)
+  t.end()
+})

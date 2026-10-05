@@ -106,7 +106,7 @@ const cases = [
   ['>2.0.0', '>=2.0.0', true],
 ]
 
-t.plan(cases.length + 1)
+t.plan(cases.length + 2)
 cases.forEach(([sub, dom, expect, options]) => {
   const msg = `${sub || "''"} ⊂ ${dom || "''"} = ${expect}` +
     (options ? ' ' + Object.keys(options).join(',') : '')
@@ -141,5 +141,17 @@ t.test('range should be subset of itself in obj or string mode', t => {
   r4.set = r.set.map(s => [...s])
   t.equal(subset(r4, r), true)
   t.equal(subset(r, r4), true)
+  t.end()
+})
+
+t.test('exclusion comparators throw rather than answer incorrectly', t => {
+  t.throws(() => subset('!=1.4.3', '1.x'),
+    new TypeError('subset is not supported for ranges with != comparators: !=1.4.3'))
+  t.throws(() => subset('1.4.3', '!=1.4.3'),
+    new TypeError('subset is not supported for ranges with != comparators: !=1.4.3'))
+  t.throws(() => subset('>=1.2.0 <2.0.0 !=1.4.3', '^1.2.0'), TypeError)
+  t.throws(() => subset('^1.2.0', '>=1.2.0 <2.0.0 !=1.4.3'), TypeError)
+  // identical ranges short-circuit before the check
+  t.equal(subset('!=1.4.3', '!=1.4.3'), true)
   t.end()
 })

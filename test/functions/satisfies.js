@@ -23,6 +23,8 @@ test('invalid ranges never satisfied (but do not throw)', t => {
     ['^1.2.3', '2.0.0-pre'],
     ['0.x', undefined],
     ['*', undefined],
+    ['!=1.4', '1.2.3'],
+    ['!=1.x', '1.2.3'],
   ]
   t.plan(cases.length)
   cases.forEach(([range, ver]) =>

@@ -39,6 +39,16 @@ const outside = (version, range, hilo, options) => {
     return false
   }
 
+  // the high/low comparator logic below does not account for exclusion
+  // comparators, so refuse to answer rather than risk a wrong result
+  for (const comparators of range.set) {
+    for (const comparator of comparators) {
+      if (comparator.operator === '!=') {
+        throw new TypeError(`gtr/ltr are not supported for ranges with != comparators: ${range.raw}`)
+      }
+    }
+  }
+
   // From now on, variable terms are as if we're in "gtr" mode.
   // but note that everything is flipped for the "ltr" function.
 

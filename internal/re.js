@@ -196,6 +196,13 @@ createToken('CARETLOOSE', `^${src[t.LONECARET]}${src[t.XRANGEPLAINLOOSE]}$`)
 createToken('COMPARATORLOOSE', `^${src[t.GTLT]}\\s*(${src[t.LOOSEPLAIN]})$|^$`)
 createToken('COMPARATOR', `^${src[t.GTLT]}\\s*(${src[t.FULLPLAIN]})$|^$`)
 
+// An exclusion comparator, like `!=1.2.3`, which removes exactly one
+// version from the set.  Only a full version may be excluded: partial
+// versions like `!=1.2` or `!=1.x` are invalid, since excluding a whole
+// swath of versions is expressed with other range syntax.
+createToken('EXCLUDE', `^(!=)\\s*(${src[t.FULLPLAIN]})$`)
+createToken('EXCLUDELOOSE', `^(!=)\\s*(${src[t.LOOSEPLAIN]})$`)
+
 // An expression to strip any whitespace between the gtlt and the thing
 // it modifies, so that `> 1.2.3` ==> `>1.2.3`
 createToken('COMPARATORTRIM', `(\\s*)${src[t.GTLT]

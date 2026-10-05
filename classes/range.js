@@ -143,9 +143,10 @@ class Range {
 
     if (loose) {
       // in loose mode, throw out any that are not valid comparators
+      // exclusions are kept so that invalid ones still throw below
       rangeList = rangeList.filter(comp => {
         debug('loose invalid filter', comp, this.options)
-        return !!comp.match(re[t.COMPARATORLOOSE])
+        return !!comp.match(re[t.COMPARATORLOOSE]) || comp.startsWith('!=')
       })
     }
     debug('range list', rangeList)
@@ -181,11 +182,7 @@ class Range {
         range.set.some((rangeComparators) => {
           return (
             isSatisfiable(rangeComparators, options) &&
-            thisComparators.every((thisComparator) => {
-              return rangeComparators.every((rangeComparator) => {
-                return thisComparator.intersects(rangeComparator, options)
-              })
-            })
+            setsIntersect(thisComparators, rangeComparators, options)
           )
         })
       )
@@ -224,6 +221,7 @@ const parseOptions = require('../internal/parse-options')
 const Comparator = require('./comparator')
 const debug = require('../internal/debug')
 const SemVer = require('./semver')
+const compare = require('../functions/compare')
 const {
   safeRe: re,
   src,
@@ -240,6 +238,25 @@ const BUILDSTRIPRE = new RegExp(src[t.BUILD], 'g')
 const isNullSet = c => c.value === '<0.0.0-0'
 const isAny = c => c.value === ''
 
+const hasExclusion = (comparators) =>
+  comparators.some(c => c.operator === '!=')
+
+// with no exclusions, two comparator sets intersect iff every comparator
+// in one intersects every comparator in the other.  exclusions break
+// that pairwise reasoning: `>=1.4.3 <=1.4.3` and `!=1.4.3` intersect
+// pairwise, but the combined set is empty.  so when either set has an
+// exclusion, check the satisfiability of the combined set instead.
+const setsIntersect = (thisComparators, rangeComparators, options) => {
+  if (hasExclusion(thisComparators) || hasExclusion(rangeComparators)) {
+    return isSatisfiable([...thisComparators, ...rangeComparators], options)
+  }
+  return thisComparators.every((thisComparator) => {
+    return rangeComparators.every((rangeComparator) => {
+      return thisComparator.intersects(rangeComparator, options)
+    })
+  })
+}
+
 // take a set of comparators and determine whether there
 // exists a version which can satisfy it
 const isSatisfiable = (comparators, options) => {
@@ -255,8 +272,42 @@ const isSatisfiable = (comparators, options) => {
     testComparator = remainingComparators.pop()
   }
 
-  return result
+  return result && !excludesOnlyVersion(comparators)
 }
+
+// a set like `>=1.4.3 <=1.4.3` contains only the single version 1.4.3,
+// so excluding that version with `!=1.4.3` makes the set unsatisfiable,
+// even though every pair of comparators intersects.  (a set with an =
+// comparator is already handled by the pairwise check above, and an
+// exclusion can never empty a set of more than one version.)
+const excludesOnlyVersion = (comparators) => {
+  let gt = null
+  let lt = null
+  const exclusions = []
+  for (const c of comparators) {
+    if (c.operator === '!=') {
+      exclusions.push(c.semver)
+    } else if (c.operator === '>' || c.operator === '>=') {
+      gt = higherBound(gt, c)
+    } else if (c.operator === '<' || c.operator === '<=') {
+      lt = lowerBound(lt, c)
+    }
+  }
+
+  if (!exclusions.length || !gt || !lt ||
+      gt.operator !== '>=' || lt.operator !== '<=' ||
+      gt.semver.version !== lt.semver.version) {
+    return false
+  }
+
+  return exclusions.some(v => v.version === gt.semver.version)
+}
+
+const higherBound = (a, b) =>
+  (!a || compare(b.semver, a.semver) > 0) ? b : a
+
+const lowerBound = (a, b) =>
+  (!a || compare(b.semver, a.semver) < 0) ? b : a
 
 // comprised of xranges, tildes, stars, and gtlt's at this point.
 // already replaced the hyphen ranges
@@ -556,6 +607,11 @@ const testSet = (set, version, options) => {
     for (let i = 0; i < set.length; i++) {
       debug(set[i].semver)
       if (set[i].semver === Comparator.ANY) {
+        continue
+      }
+
+      // an exclusion never allows prereleases, it only removes versions
+      if (set[i].operator === '!=') {
         continue
       }
 

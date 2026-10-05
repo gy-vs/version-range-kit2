@@ -133,4 +133,23 @@ module.exports = [
   ['<=0.7.x', '0.7.0-asdf', { includePrerelease: true }],
 
   ['>=1.0.0 <=1.1.0', '1.1.0-pre', { includePrerelease: true }],
+
+  // exclusion comparators
+  ['!=1.4.3', '1.4.4'],
+  ['!=1.4.3', '1.4.2'],
+  ['!=1.4.3', '0.0.0'],
+  ['!=1.4.3', '1.4.3-0', { includePrerelease: true }],
+  ['>=1.2.0 <2.0.0 !=1.4.3', '1.4.4'],
+  ['>=1.2.0 <2.0.0 !=1.4.3', '1.2.0'],
+  ['>=1.2.0 <2.0.0 !=1.4.3', '1.4.3-0', { includePrerelease: true }],
+  ['^1.2.0 !=1.4.3 !=1.5.0', '1.5.1'],
+  ['!=2.0.0-rc.2', '2.0.0-rc.3', { includePrerelease: true }],
+  ['^2.0.0-rc.1 !=2.0.0-rc.2', '2.0.0-rc.3'],
+  // an exclusion with a prerelease does not allow other prereleases,
+  // a comparator with a prerelease on the same tuple still does
+  ['>=1.2.3-beta.1 !=1.2.3-beta.1', '1.2.3-beta.2'],
+  // exclusions only apply to their own ||-separated set
+  ['!=1.4.3 || !=1.5.0', '1.4.3'],
+  ['!=1.4.3 || >=2.0.0', '2.0.0'],
+  ['>=1.2.0 <2.0.0 !=1.4.3 || >=3.0.0', '3.0.0'],
 ]
