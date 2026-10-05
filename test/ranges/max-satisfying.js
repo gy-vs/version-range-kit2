@@ -25,3 +25,12 @@ test('bad ranges in max satisfying', (t) => {
   t.equal(maxSatisfying([], r), null)
   t.end()
 })
+
+test('max satisfying with != exclusions', (t) => {
+  const versions = ['1.4.0', '1.4.2', '1.4.3', '1.4.4', '1.5.0', '2.0.0']
+  t.equal(maxSatisfying(versions, '^1.4.0 !=1.5.0'), '1.4.4')
+  t.equal(maxSatisfying(versions, '^1.4.0 !=1.4.3 !=1.4.4'), '1.5.0')
+  t.equal(maxSatisfying(versions, '!=1.4.3'), '2.0.0')
+  t.equal(maxSatisfying(['1.4.3'], '!=1.4.3'), null)
+  t.end()
+})

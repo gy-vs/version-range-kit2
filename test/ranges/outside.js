@@ -53,3 +53,10 @@ test('outside with bad hilo throws', (t) => {
   }, new TypeError('Must provide a hilo val of "<" or ">"'))
   t.end()
 })
+
+test('outside throws on ranges with != comparators', (t) => {
+  const range = '>=1.0.0 <2.0.0 !=1.4.3'
+  t.throws(() => outside('2.0.0', range, '>'), TypeError)
+  t.throws(() => outside('0.9.0', range, '<'), TypeError)
+  t.end()
+})

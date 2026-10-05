@@ -58,3 +58,26 @@ test('missing comparator parameter in intersect comparators', (t) => {
   'throws type error')
   t.end()
 })
+
+test('intersects with != exclusions', t => {
+  // [r0, r1, expect]
+  const cases = [
+    ['1.4.3', '!=1.4.3', false],
+    ['^1.4.0', '!=1.4.3', true],
+    ['!=1.4.3', '!=1.4.3', true],
+    ['!=1.4.3', '!=1.4.4', true],
+    ['<1.4.3', '!=1.4.3', true],
+    ['1.4.3 || 1.4.4', '!=1.4.3', true],
+    ['1.4.3', '!=1.4.3 || 1.4.5', false],
+    ['1.4.5', '!=1.4.3 || 1.4.3', true],
+    ['1.4.3 !=1.4.3', '1.4.3', false],
+    ['1.4.3 !=1.4.3 || 1.4.4', '1.4.4', true],
+    ['>=1.2.0 <2.0.0 !=1.4.3', '1.4.4', true],
+    ['>=1.2.0 <2.0.0 !=1.4.3', '1.4.3', false],
+  ]
+  cases.forEach(([r0, r1, expect]) => {
+    t.equal(intersects(r0, r1), expect, `${r0} <~> ${r1} => ${expect}`)
+    t.equal(intersects(r1, r0), expect, `${r1} <~> ${r0} => ${expect}`)
+  })
+  t.end()
+})

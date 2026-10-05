@@ -25,3 +25,12 @@ test('bad ranges in min satisfying', (t) => {
   t.equal(minSatisfying([], r), null)
   t.end()
 })
+
+test('min satisfying with != exclusions', (t) => {
+  const versions = ['1.4.0', '1.4.2', '1.4.3', '1.4.4', '1.5.0']
+  t.equal(minSatisfying(versions, '^1.4.0 !=1.4.0'), '1.4.2')
+  t.equal(minSatisfying(versions, '^1.4.0 !=1.4.2'), '1.4.0')
+  t.equal(minSatisfying(versions, '^1.4.0 !=1.4.3 !=1.4.4'), '1.4.0')
+  t.equal(minSatisfying(['1.4.3'], '!=1.4.3'), null)
+  t.end()
+})

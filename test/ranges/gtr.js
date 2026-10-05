@@ -30,3 +30,10 @@ test('negative gtr tests', (t) => {
   })
   t.end()
 })
+
+test('gtr throws on ranges with != comparators', (t) => {
+  t.throws(() => gtr('2.0.0', '^1.0.0 !=1.4.3'),
+    new TypeError('gtr/ltr is not supported on ranges with != comparators: '
+      + '>=1.0.0 <2.0.0-0 !=1.4.3'))
+  t.end()
+})

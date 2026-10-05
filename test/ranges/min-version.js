@@ -79,3 +79,36 @@ test('minimum version in range tests', (t) => {
   })
   t.end()
 })
+
+test('minimum version honors != exclusions', (t) => {
+  // [range, minimum, loose]
+  [
+    ['>=1.2.0 <2.0.0 !=1.4.3', '1.2.0'],
+    ['>=1.4.3 <2.0.0 !=1.4.3', '1.4.4'],
+    ['>1.4.3 !=1.4.4', '1.4.5'],
+    ['^1.4.2 !=1.4.3 !=1.4.4', '1.4.2'],
+    ['!=1.4.3', '0.0.0'],
+    ['!=0.0.0', '0.0.1'],
+    ['<1.4.3 !=1.0.0', '0.0.0'],
+    ['<1.4.3 !=0.0.0', '0.0.1'],
+    // the excluded point is the only version: null set
+    ['1.4.3 !=1.4.3', null],
+    // an upper bound below the first allowed version
+    ['<1.4.3 !=0.0.0 !=0.0.1', '0.0.2'],
+    // exclusions only remove the point in another || group
+    ['<1.4.3 !=1.0.0 || >=2.0.0 !=2.0.0', '0.0.0'],
+    ['>=1.4.3 !=1.4.3 || >=0.1.0 <0.2.0', '0.1.0'],
+    // existing prerelease convention: append .0 past the excluded pre
+    ['>=1.2.3-beta.1 !=1.2.3-beta.1', '1.2.3-beta.1.0'],
+    // null set below the lowest possible version
+    ['<0.0.0-0', null],
+    // ANY comparator in the same set as an exclusion (normalized from *)
+    ['* !=1.0.0', '0.0.0'],
+    ['!=1.0.0 <0.0.0-0', null],
+  ].forEach(([range, wanted]) => {
+    const min = minVersion(range)
+    t.ok(min === wanted || (min && min.version === wanted),
+      `minVersion(${range}) = ${wanted}`, { found: min && min.version })
+  })
+  t.end()
+})

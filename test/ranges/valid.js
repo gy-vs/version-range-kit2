@@ -12,3 +12,17 @@ test('valid range test', (t) => {
     t.equal(validRange(pre, options), wanted,
       `validRange(${pre}) === ${wanted} ${JSON.stringify(options)}`))
 })
+
+test('valid range with != exclusions', (t) => {
+  t.equal(validRange('>=1.2.0 <2.0.0 !=1.4.3'),
+    '>=1.2.0 <2.0.0 !=1.4.3')
+  t.equal(validRange('^1.2.0 !=1.4.3 !=1.5.0'),
+    '>=1.2.0 <2.0.0-0 !=1.4.3 !=1.5.0')
+  t.equal(validRange('!=1.4.3'), '!=1.4.3')
+  t.equal(validRange('!=2.0.0-rc.2'), '!=2.0.0-rc.2')
+  t.equal(validRange('!=v1.4.3', { loose: true }), '!=1.4.3')
+  t.equal(validRange('!=1.4'), null)
+  t.equal(validRange('!=1.x'), null)
+  t.equal(validRange('>=1.0.0 !=1.2'), null)
+  t.end()
+})

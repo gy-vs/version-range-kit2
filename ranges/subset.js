@@ -96,6 +96,67 @@ const simpleSubset = (sub, dom, options) => {
     }
   }
 
+  // Split out != comparators. Removing exclusions from sub can only make sub
+  // smaller, so they do not affect the subset relation. For every version
+  // excluded by dom, sub must exclude it too, otherwise that single version
+  // is a counterexample.
+  const subExclusions = sub.filter(c => c.operator === '!=')
+  const domExclusions = dom.filter(c => c.operator === '!=')
+  let subPositive = sub.filter(c => c.operator !== '!=')
+  let domPositive = dom.filter(c => c.operator !== '!=')
+
+  // With no positive comparators (eg. a bare `!=1.4.3`), the positive span
+  // is every version, the same thing the ANY comparator means. Replace it
+  // with the lower bound, just like the ANY case above.
+  const minimumComparators = options.includePrerelease
+    ? minimumVersionWithPreRelease
+    : minimumVersion
+  if (!subPositive.length) {
+    subPositive = minimumComparators
+  }
+  if (!domPositive.length) {
+    domPositive = minimumComparators
+  }
+
+  // A null positive span means the whole simple range is a null set, since
+  // != comparators can only remove more versions. Propagate it so the outer
+  // complex-range logic can treat it as the null set.
+  const positiveSubset = simplePositiveSubset(subPositive, domPositive, options)
+  if (positiveSubset === null) {
+    return null
+  }
+  if (!positiveSubset) {
+    return false
+  }
+
+  if (!domExclusions.length) {
+    return true
+  }
+
+  // A range string made of just the positive comparators of sub. A version
+  // excluded by sub satisfies the positive bounds but is removed by the !=
+  // comparator, so membership in the positive span plus an != check gives
+  // the actual membership in sub.
+  const subPositiveRange = subPositive.map(c => c.value).join(' ').trim()
+
+  for (const excluded of domExclusions) {
+    // Only versions the positive span of sub actually reaches can be
+    // counterexamples. If the positive span does not contain the excluded
+    // version, dom excluding it changes nothing for sub.
+    if (!satisfies(excluded.semver, subPositiveRange, options)) {
+      continue
+    }
+    // The positive span reaches it, so sub has to exclude the exact same
+    // version with an != comparator as well.
+    if (!subExclusions.some(c => c.semver.version === excluded.semver.version)) {
+      return false
+    }
+  }
+
+  return true
+}
+
+const simplePositiveSubset = (sub, dom, options) => {
   const eqSet = new Set()
   let gt, lt
   for (const c of sub) {

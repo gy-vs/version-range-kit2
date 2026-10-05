@@ -14,6 +14,16 @@ const outside = (version, range, hilo, options) => {
   version = new SemVer(version, options)
   range = new Range(range, options)
 
+  // The high/low edge heuristics below assume the range is a contiguous
+  // span of versions. An != comparator punches a hole in that span, so
+  // there is no single high or low edge to compare against. Refuse rather
+  // than silently return a wrong answer.
+  if (range.set.some(comparators =>
+    comparators.some(comparator => comparator.operator === '!='))) {
+    throw new TypeError(
+      `gtr/ltr is not supported on ranges with != comparators: ${range.range}`)
+  }
+
   let gtfn, ltefn, ltfn, comp, ecomp
   switch (hilo) {
     case '>':

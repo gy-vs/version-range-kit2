@@ -141,11 +141,26 @@ class Range {
       // >=0.0.0 is equivalent to *
       .map(comp => replaceGTE0(comp, this.options))
 
+    // != always requires a complete version, even in loose mode. Partial
+    // versions such as `!=1.4` or `!=1.x` are invalid because excluding a
+    // whole span is expressed with < and > comparators instead. This is
+    // checked before the loose-mode filter below, otherwise the invalid
+    // comparator would silently be dropped. Any token starting with `!`
+    // must match the exclusion grammar, which also catches the bare `!`
+    // left behind by star stripping (`!=*`) and doubled operators.
+    const neqRe = loose ? re[t.COMPARATORNEQLOOSE] : re[t.COMPARATORNEQ]
+    for (const comp of rangeList) {
+      if (comp.startsWith('!') && !comp.match(neqRe)) {
+        throw new TypeError(`Invalid comparator: ${comp}`)
+      }
+    }
+
     if (loose) {
       // in loose mode, throw out any that are not valid comparators
       rangeList = rangeList.filter(comp => {
         debug('loose invalid filter', comp, this.options)
-        return !!comp.match(re[t.COMPARATORLOOSE])
+        return !!comp.match(re[t.COMPARATORLOOSE]) ||
+          !!comp.match(re[t.COMPARATORNEQLOOSE])
       })
     }
     debug('range list', rangeList)
@@ -556,6 +571,12 @@ const testSet = (set, version, options) => {
     for (let i = 0; i < set.length; i++) {
       debug(set[i].semver)
       if (set[i].semver === Comparator.ANY) {
+        continue
+      }
+
+      // An != comparator only removes a single version, so it never grants
+      // permission for prereleases of a tuple to match.
+      if (set[i].operator === '!=') {
         continue
       }
 

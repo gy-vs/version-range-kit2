@@ -24,3 +24,10 @@ test('negative ltr tests', (t) => {
   })
   t.end()
 })
+
+test('ltr throws on ranges with != comparators', (t) => {
+  t.throws(() => ltr('1.0.0', '^1.0.0 !=1.4.3'),
+    new TypeError('gtr/ltr is not supported on ranges with != comparators: '
+      + '>=1.0.0 <2.0.0-0 !=1.4.3'))
+  t.end()
+})

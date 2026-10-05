@@ -34,6 +34,19 @@ class Comparator {
   }
 
   parse (comp) {
+    // != exclusions are handled separately, both because they require a
+    // complete version (the normal GTLT/XRANGE grammars accept partial
+    // versions) and because they invert the result of the comparison.
+    const neq = this.options.loose
+      ? re[t.COMPARATORNEQLOOSE]
+      : re[t.COMPARATORNEQ]
+    const neqMatch = comp.match(neq)
+    if (neqMatch) {
+      this.operator = '!='
+      this.semver = new SemVer(neqMatch[1], this.options.loose)
+      return
+    }
+
     const r = this.options.loose ? re[t.COMPARATORLOOSE] : re[t.COMPARATOR]
     const m = comp.match(r)
 
@@ -103,6 +116,15 @@ class Comparator {
     if (!options.includePrerelease &&
       (this.value.startsWith('<0.0.0') || comp.value.startsWith('<0.0.0'))) {
       return false
+    }
+
+    // An != comparator only excludes a single version. Two exclusions always
+    // intersect (each leaves infinitely many versions), and an exclusion
+    // intersects every bounded/unbounded <, >, <=, >= comparator except the
+    // equality case handled above (which only happens when the other side
+    // has no operator, so != can never reach that branch).
+    if (this.operator === '!=' || comp.operator === '!=') {
+      return true
     }
 
     // Same direction increasing (> or >=)

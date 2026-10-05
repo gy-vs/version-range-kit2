@@ -97,6 +97,17 @@ createToken('PRERELEASE', `(?:-(${src[t.PRERELEASEIDENTIFIER]
 createToken('PRERELEASELOOSE', `(?:-?(${src[t.PRERELEASEIDENTIFIERLOOSE]
 }(?:\\.${src[t.PRERELEASEIDENTIFIERLOOSE]})*))`)
 
+// Like PRERELEASELOOSE, but the prerelease content is required, so a bare
+// trailing hyphen (eg. 1.2.3-) does not match. The hyphen is only optional
+// when an identifier directly follows (the loose `1.2.3beta` spelling); a
+// leading hyphen may not itself be the identifier, since NONNUMERICIDENTIFIER
+// otherwise accepts a lone `-`.
+createToken('PRERELEASELOOSENONEMPTY',
+  `(?:-(${src[t.PRERELEASEIDENTIFIERLOOSE]
+}(?:\\.${src[t.PRERELEASEIDENTIFIERLOOSE]})*)|(?=[^-])(${
+  src[t.PRERELEASEIDENTIFIERLOOSE]
+}(?:\\.${src[t.PRERELEASEIDENTIFIERLOOSE]})*))`)
+
 // ## Build Metadata Identifier
 // Any combination of digits, letters, or hyphens.
 
@@ -195,6 +206,17 @@ createToken('CARETLOOSE', `^${src[t.LONECARET]}${src[t.XRANGEPLAINLOOSE]}$`)
 // A simple gt/lt/eq thing, or just "" to indicate "any version"
 createToken('COMPARATORLOOSE', `^${src[t.GTLT]}\\s*(${src[t.LOOSEPLAIN]})$|^$`)
 createToken('COMPARATOR', `^${src[t.GTLT]}\\s*(${src[t.FULLPLAIN]})$|^$`)
+
+// An != exclusion, which always requires a complete version. Partial versions
+// like 1.4 or 1.x are intentionally not allowed here; excluding a whole span
+// is done with < and > comparators. The loose form accepts loose version
+// spelling (eg. v1.2.3beta) but still requires a full main version and a
+// non-empty prerelease, so !=1.4 and !=1.4.3- stay invalid.
+createToken('NEQPLAINLOOSE', `[v=\\s]*${src[t.MAINVERSIONLOOSE]
+}${src[t.PRERELEASELOOSENONEMPTY]}?${
+  src[t.BUILD]}?`)
+createToken('COMPARATORNEQLOOSE', `^!=(?!=)\\s*(${src[t.NEQPLAINLOOSE]})$`)
+createToken('COMPARATORNEQ', `^!=(?!=)\\s*(${src[t.FULLPLAIN]})$`)
 
 // An expression to strip any whitespace between the gtlt and the thing
 // it modifies, so that `> 1.2.3` ==> `>1.2.3`

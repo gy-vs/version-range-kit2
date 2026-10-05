@@ -104,6 +104,41 @@ const cases = [
   ['>=3 >=2 >=1', '>0', true],
   ['>=3 >=2 >=1', '>=3 >=2 >=1', true],
   ['>2.0.0', '>=2.0.0', true],
+
+  // != exclusions: sub must also exclude every exact version dom excludes
+  ['^1.4.0', '>=1.2.0 !=1.4.3', false],
+  ['^1.4.0 !=1.4.3', '>=1.2.0 !=1.4.3', true],
+  ['>=1.4.4 <2.0.0', '>=1.2.0 !=1.4.3', true],
+  ['>=1.2.0 !=1.4.3', '>=1.2.0 !=1.4.3 !=1.5.0', false],
+  ['>=1.2.0 !=1.4.3 !=1.5.0', '>=1.2.0 !=1.4.3', true],
+  ['1.4.3', '!=1.4.3', false],
+  ['1.4.4', '!=1.4.3', true],
+  ['!=1.4.3', '*', true],
+  ['*', '!=1.4.3', false],
+  ['^1.4.0 !=1.4.3', '^1.4.0', true],
+  ['^1.4.0 !=1.4.3', '>=1.2.0 !=2.5.0', true],
+  ['1.4.3 !=1.4.3', '>=1.2.0 !=1.4.3', true],
+  ['1.4.3 !=1.4.3', '!=1.4.3', true],
+  ['1.4.4 || 2.0.1', '^1.4.0 !=1.4.3 || ^2.0.0 !=2.0.1', false],
+  ['1.4.4 || 2.0.2', '^1.4.0 !=1.4.3 || ^2.0.0 !=2.0.1', true],
+  ['>=1.2.3-beta.1 !=1.2.3-beta.1', '>=1.2.3-beta.1', true],
+  ['>=1.2.3-beta.1', '>=1.2.3-beta.1 !=1.2.3-beta.1', false],
+  ['2.0.1', '^1.4.0 !=1.4.3 || ^2.0.0', true],
+  ['1.4.4', '>=1.2.0 !=1.4.3 !=1.4.4', false],
+  ['1.4.4 !=1.4.4', '>=1.2.0 !=1.4.4', true],
+  // a null-set sub whose only comparator is an exclusion
+  ['1.4.3 !=1.4.3', '* !=1.4.3', true],
+  // sub with no positive comparators is a larger set than a dom exclusion
+  ['!=1.4.3', '* !=1.4.3', true],
+  ['!=1.4.3', '* !=1.4.4', false],
+  // an exclusion-only sub is the whole universe minus one point
+  ['!=1.4.3', '1.4.3', false],
+  ['!=1.4.3', '>=1.0.0', false],
+  ['>=1.2.0 !=1.4.3', '!=1.4.3', true],
+  ['!=1.4.3', '!=1.4.4', false],
+  // an unreachable prerelease exclusion does not constrain the subset
+  ['!=1.4.3', '* !=1.2.3-beta.1', true],
+  ['!=1.2.3-beta.1', '* !=1.2.3-beta.1', true],
 ]
 
 t.plan(cases.length + 1)

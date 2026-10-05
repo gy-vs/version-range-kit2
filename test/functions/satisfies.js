@@ -28,3 +28,35 @@ test('invalid ranges never satisfied (but do not throw)', t => {
   cases.forEach(([range, ver]) =>
     t.notOk(satisfies(ver, range), `${range} not satisfied because invalid`))
 })
+
+test('!= exclusions', t => {
+  // [range, version, expect]
+  const include = [
+    ['!=1.4.3', '1.4.4'],
+    ['!=1.4.3', '0.0.0'],
+    ['>=1.2.0 <2.0.0 !=1.4.3', '1.2.0'],
+    ['>=1.2.0 <2.0.0 !=1.4.3', '1.4.4'],
+    ['^1.2.0 !=1.4.3 !=1.5.0', '1.4.4'],
+    ['^1.2.0 !=1.4.3 || 1.4.3', '1.4.3'],
+    ['!=2.0.0-rc.2', '2.0.0'],
+    ['>=1.2.3-beta.1 !=1.2.3-beta.1', '1.2.3-beta.2'],
+    ['>=1.2.0 !=1.2.3-beta.1', '1.2.3'],
+  ]
+  const exclude = [
+    ['!=1.4.3', '1.4.3'],
+    ['>=1.2.0 <2.0.0 !=1.4.3', '1.4.3'],
+    ['^1.2.0 !=1.4.3 !=1.5.0', '1.4.3'],
+    ['^1.2.0 !=1.4.3 !=1.5.0', '1.5.0'],
+    ['^1.2.0 !=1.4.3', '2.0.0'],
+    ['!=2.0.0-rc.2', '2.0.0-rc.2'],
+    // the exclusion does not by itself grant prerelease matching
+    ['>=1.2.0 !=1.2.3-beta.1', '1.2.3-beta.2'],
+    // nor does it allow the excluded prerelease when another comp grants it
+    ['>=1.2.3-beta.1 !=1.2.3-beta.1', '1.2.3-beta.1'],
+  ]
+  t.plan(include.length + exclude.length)
+  include.forEach(([range, ver]) =>
+    t.ok(satisfies(ver, range), `${ver} satisfies ${range}`))
+  exclude.forEach(([range, ver]) =>
+    t.notOk(satisfies(ver, range), `${ver} does not satisfy ${range}`))
+})
